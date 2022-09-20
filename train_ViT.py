@@ -16,6 +16,7 @@ def train_vit(train_loader, model = vit_tiny(), save = "model.pt"):
     for epoch in tqdm(range(epochs)):
         for data in train_loader:
             images, y = data
+            images = images.permute(0, 3, 1, 2)
             images = images.to(device)
             y = y.to(device)
             optimizer.zero_grad()
