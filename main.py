@@ -112,7 +112,7 @@ if __name__ == '__main__':
     model.to(device)
 
     num_epochs = settings.num_epochs
-    if train:
+    if settings.train:
         best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader)
     else:
         best_model = torch.load('./best_densenet_model.pth')
