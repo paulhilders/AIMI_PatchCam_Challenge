@@ -112,6 +112,9 @@ if __name__ == '__main__':
     model.to(device)
 
     num_epochs = settings.num_epochs
-    best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader)
+    if train:
+        best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader)
+    else:
+        best_model = torch.load('./best_densenet_model.pth')
     test_acc = eval_model(best_model, test_dataloader)
     print(f'test accuracy: {test_acc}')
