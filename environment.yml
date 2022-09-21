@@ -1,0 +1,13 @@
+name: AIMI
+channels:
+  - defaults
+dependencies:
+  - pytorch
+  - h5py=3.7.0
+  - numpy
+  - python=3.7
+  - pip=19.3
+  - matplotlib
+  - pip:
+    - densenet-pytorch
+    - tqdm
