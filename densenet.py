@@ -31,7 +31,6 @@ for epoch in range(10):
     count = 0
     for data in tqdm(train_dataloader):
         inputs, labels = data[0].to(device), data[1].to(device)
-
         inputs = inputs.permute(0, 3, 1, 2).byte() / 255
         labels = labels.squeeze()
         optimizer.zero_grad()
