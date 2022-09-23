@@ -100,7 +100,7 @@ class Block(nn.Module):
 class PatchEmbed(nn.Module):
     """ Image to Patch Embedding
     """
-    def __init__(self, img_size=96, patch_size=16, in_chans=3, embed_dim=768):
+    def __init__(self, img_size=96, patch_size=8, in_chans=3, embed_dim=768):
         super().__init__()
         num_patches = (img_size // patch_size) * (img_size // patch_size)
         self.img_size = img_size
@@ -310,8 +310,6 @@ class DINOHead(nn.Module):
         x = self.mlp(x)
         x = nn.functional.normalize(x, dim=-1, p=2)
         x = self.last_layer(x)
-        print("shape forward")
-        print(x.shape)
         return x
 
 class DINOLoss(nn.Module):
@@ -340,8 +338,6 @@ class DINOLoss(nn.Module):
 
         # teacher centering and sharpening
         temp = self.teacher_temp_schedule[epoch]
-        print(teacher_output.shape)
-        print(self.center.shape)
         teacher_out = F.softmax((teacher_output - self.center) / temp, dim=-1)
         teacher_out = teacher_out.detach().chunk(2)
 
@@ -365,8 +361,8 @@ class DINOLoss(nn.Module):
         Update center used for teacher output.
         """
         batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
-        dist.all_reduce(batch_center)
-        batch_center = batch_center / (len(teacher_output) * dist.get_world_size())
+        # dist.all_reduce(batch_center)
+        batch_center = batch_center / (len(teacher_output))
 
         # ema update
         self.center = self.center * self.center_momentum + batch_center * (1 - self.center_momentum)
