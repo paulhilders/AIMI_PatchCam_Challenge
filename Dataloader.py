@@ -37,9 +37,27 @@ def test_print(train_dataloader):
     print(f"Label: {label}")
 
 
+def test_print_with_label(train_dataloader, label=1):
+    fig, axs = plt.subplots(3, 3)
+    fig.suptitle(f'Example data with label {label}')
+    for x in range(3):
+        for y in range(3):
+            label_true = False
+            while not label_true:
+                train_features, train_label = next(iter(train_dataloader))
+                if train_label[0] == label:
+                    label_true = True
+            img = train_features[0].squeeze()
+            axs[x,y].imshow(img, cmap="gray")
+            axs[x,y].axis('off')
+    plt.savefig(f'./imgs/exampledata_label{label}', bbox_inches='tight')
+    plt.show()
+
 if __name__ == '__main__':
     train_dataloader, test_dataloader, valid_dataloader = getDataLoaders()
-    test_print(train_dataloader)
+    # test_print(train_dataloader)
+    test_print_with_label(train_dataloader, label=1)
+    test_print_with_label(train_dataloader, label=0)
 
 
 
