@@ -10,6 +10,7 @@ import ViT
 import numpy as np
 import torch.distributed as dist
 import torch.nn.functional as F
+import gc
 
 def accuracy(predictions, targets):
     """
@@ -17,7 +18,7 @@ def accuracy(predictions, targets):
     of the network.
     """
     acc = 0
-    y = torch.zeros(len(predictions))
+    y = torch.zeros(len(predictions)).to(device)
     for i in range(len(predictions)):
         if predictions[i] > 0:
             y[i] = 1
@@ -39,9 +40,16 @@ def eval_model(model, dataloader):
 
         outputs = model(inputs)
         loss = criterion(outputs.squeeze(), labels)
+        del inputs
         loss += loss.item()
         acc += accuracy(outputs, labels)
         count += 1
+
+        del loss
+        del labels
+        del outputs
+        gc.collect()
+        torch.cuda.empty_cache()
 
     avg_acc = acc / count
     return avg_acc
@@ -49,6 +57,7 @@ def eval_model(model, dataloader):
 def train(model,  criterion, optimizer, epochs, train_dataloader, valid_dataloader):
     val_accuracies = []
     best_val_epoch = -1
+    torch.cuda.empty_cache()
     for epoch in range(epochs):
         acc = 0.0
         running_loss = 0.0
@@ -64,12 +73,19 @@ def train(model,  criterion, optimizer, epochs, train_dataloader, valid_dataload
 
             loss = criterion(outputs.squeeze(), labels)
             running_loss += loss.item()
-
+            del inputs
             loss.backward()
 
             optimizer.step()
+            
             acc += accuracy(outputs, labels)
             count += 1
+
+            del loss
+            del labels
+            del outputs
+            gc.collect()
+            torch.cuda.empty_cache()
 
         train_loss = running_loss / count
         train_acc = acc / count
