@@ -4,7 +4,7 @@ import torch.nn as nn
 import Dataloader
 from tqdm import tqdm
 
-from utils import accuracy
+from utils import accuracy, auc
 import settings
 
 from densenet_pytorch import DenseNet
@@ -40,10 +40,10 @@ def preprocess(inputs, labels):
     return inputs, labels
 
 
-def eval_model(model, dataloader):
+def eval_model(model, dataloader, eval_function='accuracy'):
     loss = 0.0
     count = 0
-    acc = 0.0
+    metric = 0.0
     model.eval()
     for data in tqdm(dataloader):
         inputs, labels = data[0].to(device), data[1].to(device)
@@ -52,18 +52,22 @@ def eval_model(model, dataloader):
         outputs = model(inputs)
         loss = criterion(outputs, labels)
         loss += loss.item()
-        acc += accuracy(outputs, labels)
+        if eval_function == 'accuracy':
+            metric += accuracy(outputs, labels)
+        elif eval_function == 'auc':
+            metric += auc(outputs, labels)
         count += 1
+    
+    
+    avg_metric = metric / count
+    return avg_metric
 
-    avg_acc = acc / count
-    return avg_acc
 
-
-def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname):
-    val_accuracies = []
+def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
+    val_scores = []
     best_val_epoch = -1
     for epoch in range(num_epochs):
-        acc = 0.0
+        metric = 0.0
         running_loss = 0.0
         count = 0
         for data in tqdm(train_dataloader):
@@ -77,21 +81,24 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
             running_loss += loss.item()
             loss.backward()
             optimizer.step()
-            acc += accuracy(outputs, labels)
+            if eval_metric == 'accuracy':
+                metric += accuracy(outputs, labels)
+            elif eval_metric == 'auc':
+                metric += auc(outputs, labels)
             count += 1
 
         train_loss = running_loss / count
-        train_acc = acc / count
+        train_score = metric / count
         print(f'Train loss: {train_loss}')
 
-        valid_acc = eval_model(model, valid_dataloader)
-        val_accuracies.append(valid_acc)
+        valid_metric = eval_model(model, val_dataloader, eval_metric)
+        val_scores.append(valid_metric)
         print(
-            f"[Epoch {epoch + 1:2d}] Training accuracy: {train_acc * 100.0:05.2f}%, Validation accuracy: {valid_acc * 100.0:05.2f}%")
+            f"[Epoch {epoch + 1:2d}] Training {eval_metric}: {train_score * 100.0:05.2f}%, Validation accuracy: {valid_metric * 100.0:05.2f}%")
 
-        if len(val_accuracies) == 1 or valid_acc > val_accuracies[best_val_epoch]:
+        if len(val_scores) == 1 or valid_metric > val_scores[best_val_epoch]:
             print(
-                f'Validation accuracy increased({val_accuracies[best_val_epoch] * 100.0:05.2f}%--->{valid_acc * 100.0:05.2f}%) \t Saving The Model')
+                f'Validation {eval_metric} increased({val_scores[best_val_epoch] * 100.0:05.2f}%--->{valid_metric * 100.0:05.2f}%) \t Saving The Model')
             best_val_epoch = epoch
 
             # Saving State Dict
@@ -99,7 +106,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
 
     model.load_state_dict(torch.load(f'./models/{modelname}.pth'))
     best_model = model
-    return best_model, val_accuracies
+    return best_model, val_scores
 
 
 if __name__ == '__main__':
@@ -119,9 +126,9 @@ if __name__ == '__main__':
 
     num_epochs = settings.num_epochs
     if settings.train:
-        best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname)
+        best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname, settings.eval_metric)
     else:
         model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
         best_model = model
-    test_acc = eval_model(best_model, test_dataloader)
-    print(f'test accuracy: {test_acc}')
+    test_score = eval_model(best_model, test_dataloader, settings.eval_metric)
+    print(f'test {settings.eval_metric}: {test_score}')

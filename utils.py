@@ -1,4 +1,5 @@
 import torch
+from torchmetrics import AUROC
 
 def accuracy(predictions, targets):
     """
@@ -11,3 +12,11 @@ def accuracy(predictions, targets):
     accuracy = acc / len(targets)
 
     return accuracy
+
+
+def auc(predictions, targets):
+    """
+    Computes the area under the receiver operating characteristic curve
+    """
+    auroc = AUROC(pos_label=1)
+    return auroc(predictions[:,1], targets)
