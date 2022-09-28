@@ -116,10 +116,11 @@ if __name__ == '__main__':
     training = True
 
     # Load the model and define the loss function and optimizer
-    dino = torch.hub.load('facebookresearch/dino:main', 'dino_vits8')
-    dino_head = ViT.DINOHead(384,num_classes-1)
+    # dino = torch.hub.load('facebookresearch/dino:main', 'dino_vits8')
+    # dino_head = ViT.DINOHead(384,num_classes-1)
 
-    model = nn.Sequential(dino, dino_head)
+    model = ViT.VisionTransformer()
+    model.load_state_dict(torch.load('./DINO/dino_deitsmall8_pretrain_full_checkpoint.pth'), strict=False)
     print(model)
 
     # warmup_teacher_tmp = 0.04
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     #     epochs,
     # )
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters())
 
     # move the input and model to GPU for speed if available
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

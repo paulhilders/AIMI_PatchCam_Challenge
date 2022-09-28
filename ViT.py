@@ -156,7 +156,7 @@ def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
 
 class VisionTransformer(nn.Module):
     """ Vision Transformer """
-    def __init__(self, img_size=[96], patch_size=16, in_chans=3, num_classes=0, embed_dim=768, depth=12,
+    def __init__(self, img_size=[96], patch_size=16, in_chans=3, num_classes=2, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0., **kwargs):
         super().__init__()
@@ -179,7 +179,7 @@ class VisionTransformer(nn.Module):
         self.norm = nn.LayerNorm(embed_dim)
 
         # Classifier head
-        self.head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        self.head = DINOHead(embed_dim,num_classes-1) if num_classes > 0 else nn.Identity()
 
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
@@ -234,6 +234,7 @@ class VisionTransformer(nn.Module):
         for blk in self.blocks:
             x = blk(x)
         x = self.norm(x)
+        x = self.head(x)
         return x[:, 0]
 
     def get_last_selfattention(self, x):
