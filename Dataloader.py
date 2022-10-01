@@ -3,6 +3,8 @@ from torch.utils.data import Dataset
 import h5py
 import matplotlib.pyplot as plt
 
+from tqdm import tqdm
+
 
 def getDataLoaders():
     f = h5py.File('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'r')
@@ -17,11 +19,11 @@ def getDataLoaders():
     validset_x = f['x']
     f = h5py.File('pcamv1/camelyonpatch_level_2_split_valid_y.h5', 'r')
     validset_y = f['y']
-    train_dataloader = torch.utils.data.DataLoader([[trainset_x[i], trainset_y[i]] for i in range(len(trainset_y))],
+    train_dataloader = torch.utils.data.DataLoader([[trainset_x[i], trainset_y[i]] for i in tqdm(range(len(trainset_y)), desc="Loading Training data")],
                                                    shuffle=True, batch_size=64)
-    test_dataloader = torch.utils.data.DataLoader([[testset_x[i], testset_y[i]] for i in range(len(testset_y))],
+    test_dataloader = torch.utils.data.DataLoader([[testset_x[i], testset_y[i]] for i in tqdm(range(len(testset_y)), desc="Loading Test data")],
                                                    shuffle=True, batch_size=64)
-    valid_dataloader = torch.utils.data.DataLoader([[validset_x[i], validset_y[i]] for i in range(len(validset_y))],
+    valid_dataloader = torch.utils.data.DataLoader([[validset_x[i], validset_y[i]] for i in tqdm(range(len(validset_y)), desc="Loading Validation data")],
                                                    shuffle=True, batch_size=64)
     return train_dataloader, test_dataloader, valid_dataloader
 

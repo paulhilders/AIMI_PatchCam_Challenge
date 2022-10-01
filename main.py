@@ -40,7 +40,8 @@ def preprocess(inputs, labels):
     return inputs, labels
 
 
-def eval_model(model, dataloader, eval_function='accuracy'):
+def eval_model(model, dataloader, criterion, eval_function='accuracy'):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     loss = 0.0
     count = 0
     metric = 0.0
@@ -57,13 +58,14 @@ def eval_model(model, dataloader, eval_function='accuracy'):
         elif eval_function == 'auc':
             metric += auc(outputs, labels)
         count += 1
-    
-    
+
+
     avg_metric = metric / count
     return avg_metric
 
 
 def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     val_scores = []
     best_val_epoch = -1
     for epoch in range(num_epochs):
@@ -91,7 +93,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
         train_score = metric / count
         print(f'Train loss: {train_loss}')
 
-        valid_metric = eval_model(model, val_dataloader, eval_metric)
+        valid_metric = eval_model(model, val_dataloader, criterion, eval_metric)
         val_scores.append(valid_metric)
         print(
             f"[Epoch {epoch + 1:2d}] Training {eval_metric}: {train_score * 100.0:05.2f}%, Validation accuracy: {valid_metric * 100.0:05.2f}%")
@@ -130,5 +132,5 @@ if __name__ == '__main__':
     else:
         model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
         best_model = model
-    test_score = eval_model(best_model, test_dataloader, settings.eval_metric)
+    test_score = eval_model(best_model, test_dataloader, criterion, settings.eval_metric)
     print(f'test {settings.eval_metric}: {test_score}')
