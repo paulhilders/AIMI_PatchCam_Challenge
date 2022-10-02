@@ -3,6 +3,7 @@ import torch.optim as optim
 import torch.nn as nn
 import Dataloader
 from tqdm import tqdm
+import csv
 
 from utils import accuracy, auc
 import settings
@@ -40,16 +41,26 @@ def preprocess(inputs, labels):
     return inputs, labels
 
 
-def eval_model(model, dataloader, eval_function='accuracy'):
+def eval_model(model, dataloader, eval_function='accuracy', test=False):
     loss = 0.0
     count = 0
     metric = 0.0
     model.eval()
+    if test:
+        f = open(f'./predictions/{settings.modelname}_predictions.csv', 'w')
+        writer = csv.writer(f)
+        writer.writerow('case,\tprediction')
+        final = []
+        running_i = 0
     for data in tqdm(dataloader):
         inputs, labels = data[0].to(device), data[1].to(device)
         inputs, labels = preprocess(inputs, labels)
 
         outputs = model(inputs)
+        if test:
+            for i, output in enumerate(outputs):
+                writer.writerow(f'{running_i+i},\t{max(output)}')
+            running_i += len(outputs)
         loss = criterion(outputs, labels)
         loss += loss.item()
         if eval_function == 'accuracy':
@@ -130,5 +141,5 @@ if __name__ == '__main__':
     else:
         model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
         best_model = model
-    test_score = eval_model(best_model, test_dataloader, settings.eval_metric)
+    test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True)
     print(f'test {settings.eval_metric}: {test_score}')
