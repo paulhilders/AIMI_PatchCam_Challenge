@@ -49,7 +49,7 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
     if test:
         f = open(f'./predictions/{settings.modelname}_predictions.csv', 'w')
         writer = csv.writer(f)
-        writer.writerow('case,\tprediction')
+        writer.writerow(['case','prediction'])
         final = []
         running_i = 0
     for data in tqdm(dataloader):
@@ -58,8 +58,10 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
 
         outputs = model(inputs)
         if test:
+            sigmoid = nn.Sigmoid()
             for i, output in enumerate(outputs):
-                writer.writerow(f'{running_i+i},\t{max(output)}')
+                probs = sigmoid(output)
+                writer.writerow([f'{running_i+i}',f'{probs[1]}'])
             running_i += len(outputs)
         loss = criterion(outputs, labels)
         loss += loss.item()
