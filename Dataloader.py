@@ -12,8 +12,8 @@ class PCAMDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.pcam_x_frame = h5py.File(h5pyfile_x, 'r')
-        self.pcam_y_frame = h5py.File(h5pyfile_y, 'r')
+        self.pcam_x_frame = h5py.File(h5pyfile_x, 'r')['x']
+        self.pcam_y_frame = h5py.File(h5pyfile_y, 'r')['y']
         self.transform = transform
 
     def __len__(self):
@@ -23,8 +23,8 @@ class PCAMDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        image = self.pcam_x_frame['x'][idx]
-        labels = self.pcam_y_frame['y'][idx]
+        image = self.pcam_x_frame[idx]
+        labels = self.pcam_y_frame[idx]
         sample = {'image': image, 'label': labels}
 
         if self.transform:

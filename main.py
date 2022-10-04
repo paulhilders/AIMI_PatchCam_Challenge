@@ -53,8 +53,8 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
             writer.writerow(['case','prediction'])
             final = []
             running_i = 0
-        for data in tqdm(dataloader):
-            inputs, labels = data[0].to(device), data[1].to(device)
+        for i_batch, sample_batched in tqdm(enumerate(train_dataloader)):
+            inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
             inputs, labels = preprocess(inputs, labels)
 
             outputs = model(inputs)
@@ -84,8 +84,8 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
         metric = 0.0
         running_loss = 0.0
         count = 0
-        for data in tqdm(train_dataloader):
-            inputs, labels = data[0].to(device), data[1].to(device)
+        for i_batch, sample_batched in tqdm(enumerate(train_dataloader)):
+            inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
 
             inputs, labels = preprocess(inputs, labels)
 
