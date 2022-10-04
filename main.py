@@ -46,31 +46,32 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
     count = 0
     metric = 0.0
     model.eval()
-    if test:
-        f = open(f'./predictions/{settings.modelname}_predictions.csv', 'w')
-        writer = csv.writer(f)
-        writer.writerow(['case','prediction'])
-        final = []
-        running_i = 0
-    for data in tqdm(dataloader):
-        inputs, labels = data[0].to(device), data[1].to(device)
-        inputs, labels = preprocess(inputs, labels)
-
-        outputs = model(inputs)
+    with torch.no_grad():
         if test:
-            sigmoid = nn.Sigmoid()
-            for i, output in enumerate(outputs):
-                probs = sigmoid(output)
-                writer.writerow([f'{running_i+i}',f'{probs[1]}'])
-            running_i += len(outputs)
-        loss = criterion(outputs, labels)
-        loss += loss.item()
-        if eval_function == 'accuracy':
-            metric += accuracy(outputs, labels)
-        elif eval_function == 'auc':
-            metric += auc(outputs, labels)
-        count += 1
-    
+            f = open(f'./predictions/{settings.modelname}_predictions.csv', 'w')
+            writer = csv.writer(f)
+            writer.writerow(['case','prediction'])
+            final = []
+            running_i = 0
+        for data in tqdm(dataloader):
+            inputs, labels = data[0].to(device), data[1].to(device)
+            inputs, labels = preprocess(inputs, labels)
+
+            outputs = model(inputs)
+            if test:
+                sigmoid = nn.Sigmoid()
+                for i, output in enumerate(outputs):
+                    probs = sigmoid(output)
+                    writer.writerow([f'{running_i+i}',f'{probs[1]}'])
+                running_i += len(outputs)
+            loss = criterion(outputs, labels)
+            loss += loss.item()
+            if eval_function == 'accuracy':
+                metric += accuracy(outputs, labels)
+            elif eval_function == 'auc':
+                metric += auc(outputs, labels)
+            count += 1
+        
     
     avg_metric = metric / count
     return avg_metric
