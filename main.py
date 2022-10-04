@@ -4,6 +4,7 @@ import torch.nn as nn
 import Dataloader
 from tqdm import tqdm
 import csv
+import torchvision
 
 from utils import accuracy, auc
 import settings
@@ -126,7 +127,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
 if __name__ == '__main__':
     # Load the dataloaders from the dataset
     print("Started loading Dataloaders...")
-    train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders()
+    train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders(transform=settings.transform)
     print("Dataloaders loaded")
 
     # Load the model and define the loss function and optimizer

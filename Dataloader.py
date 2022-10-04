@@ -33,7 +33,7 @@ class PCAMDataset(Dataset):
         return sample
 
 
-def getDataLoaders():
+def getDataLoaders(transform=None):
     # f = h5py.File('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'r')
     # trainset_x = f['x']
     # f = h5py.File('pcamv1/camelyonpatch_level_2_split_train_y.h5', 'r')
@@ -46,9 +46,9 @@ def getDataLoaders():
     # validset_x = f['x']
     # f = h5py.File('pcamv1/camelyonpatch_level_2_split_valid_y.h5', 'r')
     # validset_y = f['y']
-    train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'pcamv1/camelyonpatch_level_2_split_train_y.h5', None)
-    valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5', 'pcamv1/camelyonpatch_level_2_split_valid_y.h5', None)
-    test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5', 'pcamv1/camelyonpatch_level_2_split_test_y.h5', None)
+    train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'pcamv1/camelyonpatch_level_2_split_train_y.h5', transform=transform)
+    valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5', 'pcamv1/camelyonpatch_level_2_split_valid_y.h5', transform=transform)
+    test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5', 'pcamv1/camelyonpatch_level_2_split_test_y.h5', transform=transform)
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                    shuffle=True, batch_size=64)
@@ -88,7 +88,7 @@ def test_print_with_label(train_dataloader, label=1):
 
 
 if __name__ == '__main__':
-    train_dataloader, test_dataloader, valid_dataloader = getDataLoaders()
+    train_dataloader, test_dataloader, valid_dataloader = getDataLoaders(transform=None)
     # test_print(train_dataloader)
     test_print_with_label(train_dataloader, label=1)
     test_print_with_label(train_dataloader, label=0)
