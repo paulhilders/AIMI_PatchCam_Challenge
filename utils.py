@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torchmetrics import AUROC, AUC
-from sklearn.metrics import roc_auc_score
 
 def accuracy(predictions, targets):
     """
