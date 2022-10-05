@@ -4,13 +4,11 @@ model = 'densenet201'
 loss = 'cross_entropy'
 optimizer = 'adam'
 lr = 0.0001
-num_epochs = 50
+num_epochs = 30
 train = True
 freeze = False
-modelname = 'densenet201'
+modelname = 'densenet201_cropped'
 eval_metric = 'accuracy'
 transform = torchvision.transforms.Compose([
-                                               torchvision.transforms.CenterCrop(32)
+                                               torchvision.transforms.CenterCrop(32),
                                            ])
-# freeze = True
-# modelname = 'densenet201_freeze'

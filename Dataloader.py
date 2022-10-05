@@ -13,6 +13,7 @@ class PCAMDataset(Dataset):
                 on a sample.
         """
         self.pcam_x_frame = h5py.File(h5pyfile_x, 'r')['x']
+        print(self)
         self.pcam_y_frame = h5py.File(h5pyfile_y, 'r')['y']
         self.transform = transform
 
@@ -24,28 +25,23 @@ class PCAMDataset(Dataset):
             idx = idx.tolist()
 
         image = self.pcam_x_frame[idx]
-        labels = self.pcam_y_frame[idx]
-        sample = {'image': image, 'label': labels}
+        label = self.pcam_y_frame[idx]
+
+        image = torch.from_numpy(image).long()
+        label = torch.from_numpy(label).long()
+
+        image = image.permute(2, 0, 1).byte() / 255
+        label = label.squeeze()
 
         if self.transform:
-            sample = self.transform(sample)
+            image = self.transform(image)
+
+        sample = {'image': image, 'label': label}
 
         return sample
 
 
 def getDataLoaders(transform=None):
-    # f = h5py.File('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'r')
-    # trainset_x = f['x']
-    # f = h5py.File('pcamv1/camelyonpatch_level_2_split_train_y.h5', 'r')
-    # trainset_y = f['y']
-    # f = h5py.File('pcamv1/camelyonpatch_level_2_split_test_x.h5', 'r')
-    # testset_x = f['x']
-    # f = h5py.File('pcamv1/camelyonpatch_level_2_split_test_y.h5', 'r')
-    # testset_y = f['y']
-    # f = h5py.File('pcamv1/camelyonpatch_level_2_split_valid_x.h5', 'r')
-    # validset_x = f['x']
-    # f = h5py.File('pcamv1/camelyonpatch_level_2_split_valid_y.h5', 'r')
-    # validset_y = f['y']
     train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'pcamv1/camelyonpatch_level_2_split_train_y.h5', transform=transform)
     valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5', 'pcamv1/camelyonpatch_level_2_split_valid_y.h5', transform=transform)
     test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5', 'pcamv1/camelyonpatch_level_2_split_test_y.h5', transform=transform)

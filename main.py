@@ -54,9 +54,9 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
             writer.writerow(['case','prediction'])
             final = []
             running_i = 0
-        for i_batch, sample_batched in tqdm(enumerate(train_dataloader)):
+        for i_batch, sample_batched in tqdm(enumerate(dataloader)):
             inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
-            inputs, labels = preprocess(inputs, labels)
+            # inputs, labels = preprocess(inputs, labels)
 
             outputs = model(inputs)
             if test:
@@ -81,6 +81,7 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
 def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
     val_scores = []
     best_val_epoch = -1
+    smaller_count = 0
     for epoch in range(num_epochs):
         metric = 0.0
         running_loss = 0.0
@@ -88,7 +89,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
         for i_batch, sample_batched in tqdm(enumerate(train_dataloader)):
             inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
 
-            inputs, labels = preprocess(inputs, labels)
+            # inputs, labels = preprocess(inputs, labels)
 
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -115,9 +116,16 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
             print(
                 f'Validation {eval_metric} increased({val_scores[best_val_epoch] * 100.0:05.2f}%--->{valid_metric * 100.0:05.2f}%) \t Saving The Model')
             best_val_epoch = epoch
+            smaller_count = 0
 
             # Saving State Dict
             torch.save(model.state_dict(), f'./models/{modelname}.pth')
+
+        if valid_metric < val_scores[best_val_epoch]:
+            smaller_count += 1
+
+        if smaller_count >= 5:
+            break
 
     model.load_state_dict(torch.load(f'./models/{modelname}.pth'))
     best_model = model
