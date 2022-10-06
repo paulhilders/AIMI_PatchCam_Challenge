@@ -18,8 +18,10 @@ print("started loading dataloaders")
 train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders()
 print("dataloaders loaded")
 
-model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=96, drop_rate=0.3)
-print("With drop_rate 0.3")
+# model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=96, drop_rate=0.3)
+# print("With drop_rate 0.3")
+
+model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=96)
 
 # Define the loss function and optimizer
 criterion = set_loss_function(loss=settings.loss)
@@ -31,9 +33,9 @@ model.to(device)
 
 num_epochs = settings.num_epochs
 if settings.train:
-    best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname, settings.eval_metric)
+    best_model, val_accuracies = train(model, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname, settings.eval_metric, criterion=criterion)
 else:
     model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
     best_model = model
-test_score = eval_model(best_model, test_dataloader, criterion, settings.eval_metric)
+test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True, criterion=criterion)
 print(f'test {settings.eval_metric}: {test_score}')

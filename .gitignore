@@ -2,3 +2,4 @@ pcamv1/
 imgs/
 models/ViT.pth
 models/ViT_pretrained.pth
+models/ViT_pretrained_test86acc_copy.pth

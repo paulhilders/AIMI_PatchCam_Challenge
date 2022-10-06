@@ -42,7 +42,8 @@ def preprocess(inputs, labels):
     return inputs, labels
 
 
-def eval_model(model, dataloader, eval_function='accuracy', test=False):
+def eval_model(model, dataloader, eval_function='accuracy', test=False, criterion=None):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     loss = 0.0
     count = 0
     metric = 0.0
@@ -78,7 +79,8 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False):
     return avg_metric
 
 
-def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
+def train(model, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric, criterion=None):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     val_scores = []
     best_val_epoch = -1
     smaller_count = 0
@@ -107,7 +109,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
         train_score = metric / count
         print(f'Train loss: {train_loss}')
 
-        valid_metric = eval_model(model, val_dataloader, eval_metric)
+        valid_metric = eval_model(model, val_dataloader, eval_metric, criterion=criterion)
         val_scores.append(valid_metric)
         print(
             f"[Epoch {epoch + 1:2d}] Training {eval_metric}: {train_score * 100.0:05.2f}%, Validation accuracy: {valid_metric * 100.0:05.2f}%")
@@ -149,9 +151,9 @@ if __name__ == '__main__':
 
     num_epochs = settings.num_epochs
     if settings.train:
-        best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname, settings.eval_metric)
+        best_model, val_accuracies = train(model, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname, settings.eval_metric, criterion=criterion)
     else:
         model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
         best_model = model
-    test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True)
+    test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True, criterion=criterion)
     print(f'test {settings.eval_metric}: {test_score}')
