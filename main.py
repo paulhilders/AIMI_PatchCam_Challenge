@@ -3,6 +3,8 @@ import torch.optim as optim
 import torch.nn as nn
 import Dataloader
 from tqdm import tqdm
+import csv
+import torchvision
 
 from utils import accuracy, auc
 import settings
@@ -40,24 +42,36 @@ def preprocess(inputs, labels):
     return inputs, labels
 
 
-def eval_model(model, dataloader, criterion, eval_function='accuracy'):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+def eval_model(model, dataloader, eval_function='accuracy', test=False):
     loss = 0.0
     count = 0
     metric = 0.0
     model.eval()
-    for data in tqdm(dataloader):
-        inputs, labels = data[0].to(device), data[1].to(device)
-        inputs, labels = preprocess(inputs, labels)
+    with torch.no_grad():
+        if test:
+            f = open(f'./predictions/{settings.modelname}_predictions.csv', 'w')
+            writer = csv.writer(f)
+            writer.writerow(['case','prediction'])
+            final = []
+            running_i = 0
+        for i_batch, sample_batched in tqdm(enumerate(dataloader)):
+            inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
+            # inputs, labels = preprocess(inputs, labels)
 
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss += loss.item()
-        if eval_function == 'accuracy':
-            metric += accuracy(outputs, labels)
-        elif eval_function == 'auc':
-            metric += auc(outputs, labels)
-        count += 1
+            outputs = model(inputs)
+            if test:
+                sigmoid = nn.Sigmoid()
+                for i, output in enumerate(outputs):
+                    probs = sigmoid(output)
+                    writer.writerow([f'{running_i+i}',f'{probs[1]}'])
+                running_i += len(outputs)
+            loss = criterion(outputs, labels)
+            loss += loss.item()
+            if eval_function == 'accuracy':
+                metric += accuracy(outputs, labels)
+            elif eval_function == 'auc':
+                metric += auc(outputs, labels)
+            count += 1
 
 
     avg_metric = metric / count
@@ -65,17 +79,17 @@ def eval_model(model, dataloader, criterion, eval_function='accuracy'):
 
 
 def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     val_scores = []
     best_val_epoch = -1
+    smaller_count = 0
     for epoch in range(num_epochs):
         metric = 0.0
         running_loss = 0.0
         count = 0
-        for data in tqdm(train_dataloader):
-            inputs, labels = data[0].to(device), data[1].to(device)
+        for i_batch, sample_batched in tqdm(enumerate(train_dataloader)):
+            inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
 
-            inputs, labels = preprocess(inputs, labels)
+            # inputs, labels = preprocess(inputs, labels)
 
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -93,7 +107,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
         train_score = metric / count
         print(f'Train loss: {train_loss}')
 
-        valid_metric = eval_model(model, val_dataloader, criterion, eval_metric)
+        valid_metric = eval_model(model, val_dataloader, eval_metric)
         val_scores.append(valid_metric)
         print(
             f"[Epoch {epoch + 1:2d}] Training {eval_metric}: {train_score * 100.0:05.2f}%, Validation accuracy: {valid_metric * 100.0:05.2f}%")
@@ -102,9 +116,16 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
             print(
                 f'Validation {eval_metric} increased({val_scores[best_val_epoch] * 100.0:05.2f}%--->{valid_metric * 100.0:05.2f}%) \t Saving The Model')
             best_val_epoch = epoch
+            smaller_count = 0
 
             # Saving State Dict
             torch.save(model.state_dict(), f'./models/{modelname}.pth')
+
+        if valid_metric < val_scores[best_val_epoch]:
+            smaller_count += 1
+
+        if smaller_count >= 5:
+            break
 
     model.load_state_dict(torch.load(f'./models/{modelname}.pth'))
     best_model = model
@@ -114,7 +135,7 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
 if __name__ == '__main__':
     # Load the dataloaders from the dataset
     print("Started loading Dataloaders...")
-    train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders()
+    train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders(transform=settings.transform)
     print("Dataloaders loaded")
 
     # Load the model and define the loss function and optimizer
@@ -132,5 +153,5 @@ if __name__ == '__main__':
     else:
         model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
         best_model = model
-    test_score = eval_model(best_model, test_dataloader, criterion, settings.eval_metric)
+    test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True)
     print(f'test {settings.eval_metric}: {test_score}')

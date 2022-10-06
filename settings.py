@@ -1,11 +1,14 @@
-model = 'densenet121'
+import torchvision
+
+model = 'densenet201'
 loss = 'cross_entropy'
 optimizer = 'adam'
 lr = 0.0001
-num_epochs = 10
+num_epochs = 30
 train = True
 freeze = False
-modelname = 'ViT_pretrained'
+modelname = 'densenet201_cropped'
 eval_metric = 'accuracy'
-# freeze = True
-# modelname = 'densenet201_freeze'
+transform = torchvision.transforms.Compose([
+                                               torchvision.transforms.CenterCrop(32),
+                                           ])

@@ -1,5 +1,6 @@
 import torch
-from torchmetrics import AUROC
+import torch.nn as nn
+from torchmetrics import AUROC, AUC
 
 def accuracy(predictions, targets):
     """
@@ -14,9 +15,11 @@ def accuracy(predictions, targets):
     return accuracy
 
 
-def auc(predictions, targets):
+def auc(logits, targets):
     """
     Computes the area under the receiver operating characteristic curve
     """
-    auroc = AUROC(pos_label=1)
+    sigmoid = nn.Sigmoid()
+    predictions = sigmoid(logits)
+    auroc = AUROC()
     return auroc(predictions[:,1], targets)
