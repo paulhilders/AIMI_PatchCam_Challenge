@@ -13,7 +13,6 @@ class PCAMDataset(Dataset):
                 on a sample.
         """
         self.pcam_x_frame = h5py.File(h5pyfile_x, 'r')['x']
-        print(self)
         self.pcam_y_frame = h5py.File(h5pyfile_y, 'r')['y']
         self.transform = transform
 
@@ -41,15 +40,39 @@ class PCAMDataset(Dataset):
         return sample
 
 
-def getDataLoaders(transform=None):
-    train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5', 'pcamv1/camelyonpatch_level_2_split_train_y.h5', transform=transform)
-    valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5', 'pcamv1/camelyonpatch_level_2_split_valid_y.h5', transform=transform)
-    test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5', 'pcamv1/camelyonpatch_level_2_split_test_y.h5', transform=transform)
+def getDataLoaders(DA_transform=None, crop_transform=None, TTA_transform=None):
+    if crop_transform:
+        train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5',
+                                    'pcamv1/camelyonpatch_level_2_split_train_y.h5', transform=crop_transform)
+        valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5',
+                                    'pcamv1/camelyonpatch_level_2_split_valid_y.h5', transform=crop_transform)
+        test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5',
+                                   'pcamv1/camelyonpatch_level_2_split_test_y.h5', transform=crop_transform)
+    else:
+        train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5',
+                                    'pcamv1/camelyonpatch_level_2_split_train_y.h5', transform=None)
+        valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5',
+                                    'pcamv1/camelyonpatch_level_2_split_valid_y.h5', transform=None)
+        test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5',
+                                   'pcamv1/camelyonpatch_level_2_split_test_y.h5', transform=None)
+        if DA_transform:
+            train_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_train_x.h5',
+                                        'pcamv1/camelyonpatch_level_2_split_train_y.h5', transform=DA_transform)
+            valid_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_valid_x.h5',
+                                        'pcamv1/camelyonpatch_level_2_split_valid_y.h5', transform=DA_transform)
+
+        if TTA_transform:
+            test_dataset = PCAMDataset('pcamv1/camelyonpatch_level_2_split_test_x.h5',
+                                       'pcamv1/camelyonpatch_level_2_split_test_y.h5', transform=TTA_transform)
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                    shuffle=True, batch_size=64)
+    if TTA_transform:
+        batch_size = 1
+    else:
+        batch_size = 64
     test_dataloader = torch.utils.data.DataLoader(test_dataset,
-                                                   shuffle=False, batch_size=64)
+                                                   shuffle=False, batch_size=batch_size)
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset,
                                                    shuffle=True, batch_size=64)
     return train_dataloader, test_dataloader, valid_dataloader

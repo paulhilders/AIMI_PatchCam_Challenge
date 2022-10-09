@@ -1,4 +1,5 @@
-import torchvision
+import torchvision.transforms as T
+import torch
 from torchvision.transforms import (
     Compose,
     RandomApply,
@@ -11,16 +12,17 @@ model = 'densenet201'
 loss = 'cross_entropy'
 optimizer = 'adam'
 lr = 0.0001
-num_epochs = 8
+num_epochs = 30
 train = False
 freeze = False
-modelname = 'ViT_pretrained'
-eval_metric = 'auc'
-# transform = torchvision.transforms.Compose([
-#                                                torchvision.transforms.CenterCrop(32),
-#                                            ])
-# transform = Compose([
-#                         RandomHorizontalFlip(p=0.5),
-#                         RandomVerticalFlip(p=0.5),
-#                         RandomApply([RandomRotation((90, 90))], p=0.5),
-#                     ])
+modelname = 'densenet201_10epochs'
+eval_metric = 'accuracy'
+TTA = True
+crop_transform = None  # T.Compose([T.CenterCrop(32),])
+DA_transform = None
+TTA_transform = T.RandomApply(transforms=torch.nn.ModuleList([
+                    # T.RandomGrayscale(p=0.5),
+                    T.RandomHorizontalFlip(p=0.5),
+                    T.RandomVerticalFlip(p=0.5),
+                    T.RandomRotation(degrees=90),
+                ]), p=0.8)

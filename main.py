@@ -5,6 +5,7 @@ import Dataloader
 from tqdm import tqdm
 import csv
 import torchvision
+import numpy as np
 
 from utils import accuracy, auc
 import settings
@@ -79,8 +80,53 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False, criterio
     return avg_metric
 
 
-def train(model, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric, criterion=None):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+def TTA_eval_model(model, dataloader, eval_function='accuracy'):
+    count = 0
+    metric = 0.0
+    model.eval()
+
+    f = open(f'./predictions/{settings.modelname}_TTA_predictions.csv', 'w')
+    writer = csv.writer(f)
+    writer.writerow(['case', 'prediction'])
+
+    n = 10 # number of times we do prediction for one image
+    final_predictions = None
+    for j in range(n):
+        temp_predictions = None
+        for image_id, sample in tqdm(enumerate(dataloader)):
+            image, label = sample['image'].to(device), sample['label'].to(device)
+
+            with torch.no_grad():
+                output = model(image)
+
+            if eval_function == 'accuracy':
+                metric += accuracy(output, label)
+            elif eval_function == 'auc':
+                metric += auc(output, label)
+            count += 1
+            for p in output:
+                if temp_predictions is None:
+                    temp_predictions = p
+                else:
+                    temp_predictions = torch.vstack((temp_predictions, p))
+        if final_predictions is None:
+            final_predictions = temp_predictions
+        else:
+            final_predictions += temp_predictions
+
+    final_predictions /= n # average the predictions over the number of times that we predicted an image
+    # final_predictions = final_predictions.detach().cpu().numpy()
+    # final_list_of_all_predictions = np.argmax(final_predictions)
+    sigmoid = nn.Sigmoid()
+    for i, output in enumerate(final_predictions):
+        probs = sigmoid(output)
+        writer.writerow([f'{i}', f'{probs[1]}'])
+
+    avg_metric = metric / count
+    return avg_metric
+
+
+def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
     val_scores = []
     best_val_epoch = -1
     smaller_count = 0
@@ -137,7 +183,8 @@ def train(model, optimizer, num_epochs, train_dataloader, val_dataloader, modeln
 if __name__ == '__main__':
     # Load the dataloaders from the dataset
     print("Started loading Dataloaders...")
-    train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders(transform=settings.transform)
+    train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders(
+        crop_transform=settings.crop_transform, DA_transform=settings.DA_transform, TTA_transform=settings.TTA_transform)
     print("Dataloaders loaded")
 
     # Load the model and define the loss function and optimizer
@@ -151,9 +198,13 @@ if __name__ == '__main__':
 
     num_epochs = settings.num_epochs
     if settings.train:
-        best_model, val_accuracies = train(model, optimizer, num_epochs, train_dataloader, valid_dataloader, settings.modelname, settings.eval_metric, criterion=criterion)
+        best_model, val_accuracies = train(model, criterion, optimizer, num_epochs, train_dataloader, valid_dataloader,
+                                           settings.modelname, settings.eval_metric)
     else:
         model.load_state_dict(torch.load(f'./models/{settings.modelname}.pth'))
         best_model = model
-    test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True, criterion=criterion)
+    if settings.TTA:
+        test_score = TTA_eval_model(best_model, test_dataloader, settings.eval_metric)
+    else:
+        test_score = eval_model(best_model, test_dataloader, settings.eval_metric, test=True)
     print(f'test {settings.eval_metric}: {test_score}')
