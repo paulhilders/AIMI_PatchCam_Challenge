@@ -16,12 +16,14 @@ from main import *
 
 print("started loading dataloaders")
 train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders()
+# train_dataloader, test_dataloader, valid_dataloader = Dataloader.getDataLoaders(transform=settings.transform)
 print("dataloaders loaded")
 
 # model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=96, drop_rate=0.3)
 # print("With drop_rate 0.3")
 
 model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=96)
+# model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=32)
 
 # Define the loss function and optimizer
 criterion = set_loss_function(loss=settings.loss)

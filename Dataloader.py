@@ -49,7 +49,7 @@ def getDataLoaders(transform=None):
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                    shuffle=True, batch_size=64)
     test_dataloader = torch.utils.data.DataLoader(test_dataset,
-                                                   shuffle=True, batch_size=64)
+                                                   shuffle=False, batch_size=64)
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset,
                                                    shuffle=True, batch_size=64)
     return train_dataloader, test_dataloader, valid_dataloader
