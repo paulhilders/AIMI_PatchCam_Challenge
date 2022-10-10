@@ -81,6 +81,7 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False, criterio
 
 
 def TTA_eval_model(model, dataloader, eval_function='accuracy'):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     count = 0
     metric = 0.0
     model.eval()
@@ -127,6 +128,7 @@ def TTA_eval_model(model, dataloader, eval_function='accuracy'):
 
 
 def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloader, modelname, eval_metric):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     val_scores = []
     best_val_epoch = -1
     smaller_count = 0
