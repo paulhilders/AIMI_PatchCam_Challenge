@@ -4,8 +4,6 @@ import torch.nn as nn
 import Dataloader
 from tqdm import tqdm
 import csv
-import torchvision
-import numpy as np
 
 from utils import accuracy, auc
 import settings
@@ -15,8 +13,11 @@ from densenet_pytorch import DenseNet
 
 def load_model(modelname, freeze=False):
     NUM_CLASSES = 2
+    # If you want Densenet, if not comment out line 17 and 18:
     model = DenseNet.from_pretrained(modelname)
     model.classifier = nn.Linear(model.classifier.in_features, NUM_CLASSES)
+    # If you want ViT uncomment following line:
+    #model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes=2, img_size=96)
     if freeze:
         for i, child in enumerate(model.children()):
             if i == 0:
@@ -37,15 +38,8 @@ def set_optimizer(optimizer='adam', lr=0.0001):
         return optimizer
 
 
-def preprocess(inputs, labels):
-    inputs = inputs.permute(0, 3, 1, 2).byte() / 255
-    labels = labels.squeeze()
-    return inputs, labels
-
-
 def eval_model(model, dataloader, eval_function='accuracy', test=False, criterion=None):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    loss = 0.0
     count = 0
     metric = 0.0
     model.eval()
@@ -54,11 +48,9 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False, criterio
             f = open(f'./predictions/{settings.modelname}_predictions.csv', 'w')
             writer = csv.writer(f)
             writer.writerow(['case','prediction'])
-            final = []
             running_i = 0
         for i_batch, sample_batched in tqdm(enumerate(dataloader)):
             inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
-            # inputs, labels = preprocess(inputs, labels)
 
             outputs = model(inputs)
             if test:
@@ -68,13 +60,11 @@ def eval_model(model, dataloader, eval_function='accuracy', test=False, criterio
                     writer.writerow([f'{running_i+i}',f'{probs[1]}'])
                 running_i += len(outputs)
             loss = criterion(outputs, labels)
-            loss += loss.item()
             if eval_function == 'accuracy':
                 metric += accuracy(outputs, labels)
             elif eval_function == 'auc':
                 metric += auc(outputs, labels)
             count += 1
-
 
     avg_metric = metric / count
     return avg_metric
@@ -116,8 +106,6 @@ def TTA_eval_model(model, dataloader, eval_function='accuracy'):
             final_predictions += temp_predictions
 
     final_predictions /= n # average the predictions over the number of times that we predicted an image
-    # final_predictions = final_predictions.detach().cpu().numpy()
-    # final_list_of_all_predictions = np.argmax(final_predictions)
     sigmoid = nn.Sigmoid()
     for i, output in enumerate(final_predictions):
         probs = sigmoid(output)
@@ -138,8 +126,6 @@ def train(model, criterion, optimizer, num_epochs, train_dataloader, val_dataloa
         count = 0
         for i_batch, sample_batched in tqdm(enumerate(train_dataloader)):
             inputs, labels = sample_batched['image'].to(device), sample_batched['label'].to(device)
-
-            # inputs, labels = preprocess(inputs, labels)
 
             optimizer.zero_grad()
             outputs = model(inputs)

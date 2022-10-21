@@ -46,6 +46,7 @@ def rollout(attentions, discard_ratio, head_fusion):
     mask = mask / np.max(mask)
     return mask
 
+
 class VITAttentionRollout:
     def __init__(self, model, attention_layer_name='attn_drop', head_fusion="mean",
         discard_ratio=0.9):
@@ -69,6 +70,7 @@ class VITAttentionRollout:
 
         return rollout(self.attentions, self.discard_ratio, self.head_fusion)
 
+
 def show_mask_on_image(img, mask):
     if keras_test:
         img = np.float32(img) / 255
@@ -78,6 +80,7 @@ def show_mask_on_image(img, mask):
     cam = heatmap + np.float32(img)
     cam = cam / np.max(cam)
     return np.uint8(255 * cam)
+
 
 if __name__ == "__main__":
     print("Started loading Dataloaders...")

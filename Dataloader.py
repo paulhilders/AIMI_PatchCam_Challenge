@@ -5,13 +5,6 @@ import matplotlib.pyplot as plt
 
 class PCAMDataset(Dataset):
     def __init__(self, h5pyfile_x, h5pyfile_y, transform=None):
-        """
-        Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
         self.pcam_x_frame = h5py.File(h5pyfile_x, 'r')['x']
         self.pcam_y_frame = h5py.File(h5pyfile_y, 'r')['y']
         self.transform = transform
